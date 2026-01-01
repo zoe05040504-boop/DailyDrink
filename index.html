@@ -498,5 +498,53 @@
         window.onload = init;
     </script>
 </body>
+    <!-- 多筆紀錄版：每天都可以新增，不會消失 -->
+<h2>我的每日紀錄</h2>
+
+<input type="text" id="myInput" placeholder="輸入今天的資料">
+<button onclick="saveData()">儲存</button>
+<button onclick="clearData()">清除全部</button>
+
+<ul id="savedDataList"></ul>
+
+<script>
+// 每次網頁打開就載入資料
+window.onload = function() {
+let savedData = JSON.parse(localStorage.getItem('myData')) || [];
+updateList(savedData);
+}
+
+// 儲存資料
+function saveData() {
+let input = document.getElementById('myInput').value.trim();
+if(input) {
+let savedData = JSON.parse(localStorage.getItem('myData')) || [];
+savedData.push(input); // 加到陣列
+localStorage.setItem('myData', JSON.stringify(savedData)); // 存進 LocalStorage
+updateList(savedData);
+document.getElementById('myInput').value = ''; // 清空輸入框
+}
+}
+
+// 更新網頁顯示
+function updateList(data) {
+const list = document.getElementById('savedDataList');
+list.innerHTML = ''; // 清空
+data.forEach((item, index) => {
+const li = document.createElement('li');
+li.textContent = item;
+list.appendChild(li);
+});
+}
+
+// 清除所有資料
+function clearData() {
+if(confirm("確定要清除所有紀錄嗎？")) {
+localStorage.removeItem('myData');
+updateList([]);
+}
+}
+</script>
 
 </html>
+
