@@ -498,53 +498,38 @@
         window.onload = init;
     </script>
 </body>
-    <!-- 多筆紀錄版：每天都可以新增，不會消失 -->
-<h2>我的每日紀錄</h2>
-
-<input type="text" id="myInput" placeholder="輸入今天的資料">
-<button onclick="saveData()">儲存</button>
-<button onclick="clearData()">清除全部</button>
-
-<ul id="savedDataList"></ul>
+<!-- 小提示通知 -->
+<div id="toast" style="
+position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+background: #9B72AA; color: white; padding: 10px 20px; border-radius: 20px;
+opacity: 0; transition: opacity 0.3s; z-index: 9999;
+">已儲存！</div>
 
 <script>
-// 每次網頁打開就載入資料
-window.onload = function() {
-let savedData = JSON.parse(localStorage.getItem('myData')) || [];
-updateList(savedData);
+function showToast(msg) {
+const toast = document.getElementById('toast');
+toast.innerText = msg;
+toast.style.opacity = 1;
+setTimeout(() => { toast.style.opacity = 0; }, 1500);
 }
 
-// 儲存資料
-function saveData() {
-let input = document.getElementById('myInput').value.trim();
-if(input) {
-let savedData = JSON.parse(localStorage.getItem('myData')) || [];
-savedData.push(input); // 加到陣列
-localStorage.setItem('myData', JSON.stringify(savedData)); // 存進 LocalStorage
-updateList(savedData);
-document.getElementById('myInput').value = ''; // 清空輸入框
-}
+// 修改 persist() 讓它顯示提示
+function persist() {
+localStorage.setItem(DB_KEY, JSON.stringify(drinkData));
+closeModal();
+updateStats();
+renderCalendar();
+showToast("已儲存！"); // 儲存後顯示
 }
 
-// 更新網頁顯示
-function updateList(data) {
-const list = document.getElementById('savedDataList');
-list.innerHTML = ''; // 清空
-data.forEach((item, index) => {
-const li = document.createElement('li');
-li.textContent = item;
-list.appendChild(li);
+// 頁面載入時提示資料已載入（可選）
+window.addEventListener('DOMContentLoaded', () => {
+if (Object.keys(drinkData).length > 0) {
+showToast("資料已載入！");
+}
 });
-}
-
-// 清除所有資料
-function clearData() {
-if(confirm("確定要清除所有紀錄嗎？")) {
-localStorage.removeItem('myData');
-updateList([]);
-}
-}
 </script>
 
 </html>
+
 
