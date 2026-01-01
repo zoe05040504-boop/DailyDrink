@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>我超愛喝手搖 ✨</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --mo-bg: #FFF5F6; 
+            --mo-blue: #A2D2FF; 
+            --mo-blue-deep: #8ECAE6;
+            --mo-rose: #FFC8DD; 
+            --mo-purple: #CDB4DB; 
+            --mo-text: #5F5F5F;
+            --mo-gold: #FFD700;
+            --mo-shadow: rgba(0, 0, 0, 0.06);
+        }
+
+        body {
+            background-color: var(--mo-bg);
+            font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+            color: var(--mo-text);
+            margin: 0;
+            padding: 0;
+            overflow: hidden; 
+        }
+
+        .page-content { 
+            display: none; 
+            height: 100vh;
+            overflow-y: auto;
+            padding: 24px 24px 110px 24px;
+            box-sizing: border-box;
+            -webkit-overflow-scrolling: touch;
+        }
+        .page-content.active { display: block; animation: slideUp 0.3s ease-out; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glass-card {
+            background: #FFFFFF;
+            border-radius: 32px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 25px var(--mo-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .stat-card {
+            padding: 16px 8px;
+            border-radius: 24px;
+            background: white;
+            box-shadow: 0 8px 20px var(--mo-shadow);
+            text-align: center;
+        }
+
+        .neu-btn {
+            background: #FFFFFF;
+            box-shadow: 4px 4px 10px var(--mo-shadow), -4px -4px 10px rgba(255,255,255,0.8);
+            border-radius: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            touch-action: manipulation;
+        }
+        .neu-btn:active { transform: scale(0.95); }
+
+        .calendar-day {
+            aspect-ratio: 1/1.2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            background: #FFFFFF;
+            box-shadow: 0 4px 12px var(--mo-shadow);
+            cursor: pointer;
+            position: relative;
+            transition: 0.2s;
+        }
+        .calendar-day.active {
+            background: var(--mo-blue);
+            color: white;
+            box-shadow: 0 6px 15px rgba(162, 210, 255, 0.5);
+        }
+        
+        .calendar-day .drink-icon-path { fill: var(--mo-blue); }
+        .calendar-day.active .drink-icon-path { fill: #FFFFFF; }
+
+        .drink-icon-container {
+            display: flex;
+            justify-content: center;
+            gap: 2px;
+            margin-top: 6px;
+            height: 14px;
+        }
+
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            z-index: 100;
+            border-top: 1px solid rgba(0,0,0,0.03);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; color: #D1D1D1; }
+        .tab-item.active { color: var(--mo-purple); }
+        .tab-item.main .icon-bg {
+            width: 58px;
+            height: 58px;
+            background: var(--mo-purple);
+            color: white;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(205, 180, 219, 0.5);
+            transform: translateY(-12px);
+        }
+
+        .option-btn {
+            padding: 8px 12px;
+            border-radius: 14px;
+            font-size: 11px;
+            background: #F8F9FA;
+            color: #A0A0A0;
+            box-shadow: 2px 2px 5px var(--mo-shadow);
+            cursor: pointer;
+        }
+        .option-btn.sugar-selected { background: var(--mo-purple); color: white; }
+        .option-btn.ice-selected { background: var(--mo-blue); color: white; }
+
+        .star-rating {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 4px;
+        }
+        .star-item {
+            cursor: pointer;
+            position: relative;
+            width: 32px;
+            height: 32px;
+        }
+
+        #modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-body {
+            background: white;
+            border-radius: 40px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            position: relative;
+        }
+
+        .modal-scroll-area {
+            overflow-y: auto;
+            flex: 1;
+            padding: 8px 4px;
+            margin-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #toast {
+            visibility: hidden;
+            min-width: 150px;
+            background-color: var(--mo-purple);
+            color: #fff;
+            text-align: center;
+            border-radius: 20px;
+            padding: 12px 24px;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            bottom: 120px;
+            transform: translateX(-50%);
+            font-weight: bold;
+            box-shadow: 0 10px 20px rgba(205, 180, 219, 0.4);
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 1.5s;
+        }
+
+        @keyframes fadein {
+            from { bottom: 100px; opacity: 0; }
+            to { bottom: 120px; opacity: 1; }
+        }
+
+        @keyframes fadeout {
+            from { bottom: 120px; opacity: 1; }
+            to { bottom: 100px; opacity: 0; }
+        }
+
+        .chart-container-small {
+            position: relative;
+            height: 180px;
+            width: 100%;
+        }
+
+        .page-content::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- 提示訊息框 -->
+    <div id="toast">儲存成功！ ✨</div>
+
+    <!-- 排行榜 -->
+    <div id="page-rank" class="page-content">
+        <h1 class="text-2xl font-black mb-6" style="color: var(--mo-blue-deep);">🏆 排行榜</h1>
+        <div class="glass-card">
+            <h2 class="font-bold text-gray-500 text-xs mb-4 uppercase tracking-widest">⭐ 飲品滿意度分佈</h2>
+            <div class="h-32"><canvas id="rankStarChart"></canvas></div>
+        </div>
+        <div class="glass-card">
+            <h2 class="font-bold text-gray-400 text-xs mb-6 uppercase tracking-widest">店家排行</h2>
+            <div id="rank-stores-list" class="space-y-4"></div>
+        </div>
+        <div class="glass-card">
+            <h2 class="font-bold text-gray-400 text-xs mb-6 uppercase tracking-widest">品項排行</h2>
+            <div id="rank-items-list" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- 主頁 -->
+    <div id="page-home" class="page-content active">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl font-black" style="color: var(--mo-text);">🥤 我超愛喝手搖 ✨</h1>
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2">Personal Drink Tracker</p>
+        </header>
+
+        <div class="grid grid-cols-3 gap-4 mb-8">
+            <div class="stat-card">
+                <span class="text-[10px] text-gray-400 font-bold block mb-1">總杯數</span>
+                <p class="text-2xl font-black text-[#A2D2FF]" id="stat-total-cups">0</p>
+            </div>
+            <div class="stat-card">
+                <span class="text-[10px] text-gray-400 font-bold block mb-1">總花費</span>
+                <p class="text-2xl font-black text-[#FFC8DD]" id="stat-total-cost">0</p>
+            </div>
+            <div class="stat-card">
+                <span class="text-[10px] text-gray-400 font-bold block mb-1">平均杯</span>
+                <p class="text-2xl font-black text-[#CDB4DB]" id="stat-avg-cost">0</p>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <div class="flex justify-between items-center mb-6">
+                <div class="neu-btn w-12 h-12 text-[#A2D2FF]" onclick="changeMonth(-1)">❮</div>
+                <div class="text-center">
+                    <h2 class="font-black text-2xl text-[#5F5F5F]" id="calendar-title">2026年 1月</h2>
+                    <p class="text-[10px] text-gray-300 font-bold mt-1">CALENDAR</p>
+                </div>
+                <div class="neu-btn w-12 h-12 text-[#A2D2FF]" onclick="changeMonth(1)">❯</div>
+            </div>
+            <div class="grid grid-cols-7 gap-2 mb-4 text-center text-[10px] text-gray-300 font-black">
+                <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+            </div>
+            <div id="calendar-grid" class="grid grid-cols-7 gap-3"></div>
+        </div>
+    </div>
+
+    <!-- 偏好分析 -->
+    <div id="page-stats" class="page-content">
+        <h1 class="text-2xl font-black mb-8" style="color: var(--mo-purple);">📊 偏好分析</h1>
+        <div class="glass-card">
+            <h2 class="font-bold text-gray-500 text-sm mb-4">🍭 甜度分析 SUGAR LEVEL</h2>
+            <div class="chart-container-small"><canvas id="sugarChart"></canvas></div>
+        </div>
+        <div class="glass-card">
+            <h2 class="font-bold text-gray-500 text-sm mb-4">❄️ 冰塊分析 ICE LEVEL</h2>
+            <div class="chart-container-small"><canvas id="iceChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- 導航 -->
+    <nav class="tab-bar">
+        <div class="tab-item" onclick="switchTab('rank')" id="tab-rank">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M9 2h6v7a3 3 0 0 1-6 0V2z"/></svg>
+            <span class="text-[10px] font-bold mt-1">排行榜</span>
+        </div>
+        <div class="tab-item main active" onclick="switchTab('home')" id="tab-home">
+            <div class="icon-bg flex items-center justify-center">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v5m14 0c0 1.1-.9 2-2 2H7a2 2 0 0 1-2-2m14 0v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-4M9 2v3M15 2v3"/></svg>
+            </div>
+            <span class="text-[10px] font-bold">日曆紀錄</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('stats')" id="tab-stats">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 3v18h18M18 17l-3-3-4 4-5-5"/></svg>
+            <span class="text-[10px] font-bold mt-1">趨勢圖</span>
+        </div>
+    </nav>
+
+    <!-- Modal -->
+    <div id="modal" onclick="if(event.target==this) closeModal()">
+        <div class="modal-body" onclick="event.stopPropagation()">
+            <!-- 右上角 ✕ 按鈕 -->
+            <button class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center bg-gray-50 rounded-full text-gray-300 font-bold z-[10] active:bg-gray-100" onclick="closeModal()">✕</button>
+            
+            <div class="mb-6">
+                <h2 id="modal-date-title" class="text-2xl font-black text-[#5F5F5F]">2026 / 01 / 01</h2>
+                <p class="text-[10px] text-gray-300 font-bold uppercase">Drink Record</p>
+            </div>
+            
+            <div class="modal-scroll-area">
+                <div id="cup-form-container" class="space-y-8">
+                    <!-- 由 JS 生成內容 -->
+                </div>
+            </div>
+
+            <div class="flex gap-4 mt-2">
+                <button onclick="saveCurrentDay()" class="flex-[2] bg-[#A2D2FF] text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">儲存並關閉</button>
+                <button onclick="deleteFullDay()" class="flex-1 bg-red-50 text-red-400 font-black py-4 rounded-2xl text-[10px] active:scale-95 transition-transform border border-red-100">刪除全天</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_KEY = 'drink_tracker_v20_final';
+        let drinkData = JSON.parse(localStorage.getItem(DB_KEY)) || {};
+        let currentYear = 2026;
+        let currentMonth = 0;
+        let selectedDate = "";
+        let charts = {};
+
+        const DRINK_SVG_OPEN = `<svg width="12" height="12" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">`;
+        const DRINK_SVG_PATH = `<path class="drink-icon-path" d="M17 5L18.41 2H19.5L18.09 5H21V7H3V5H17Z" /><path class="drink-icon-path" d="M5 9L6.5 22H17.5L19 9H5Z" />`;
+        const DRINK_SVG_CLOSE = `</svg>`;
+
+        function init() {
+            renderCalendar();
+            updateDataSync();
+            switchTab('home');
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            const activePage = document.getElementById(`page-${tabId}`);
+            activePage.classList.add('active');
+            activePage.scrollTop = 0;
+
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            if (tabId === 'rank') {
+                renderRankings();
+                setTimeout(renderRankStarChart, 100);
+            }
+            if (tabId === 'stats') setTimeout(renderStatsCharts, 100);
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = "";
+            document.getElementById('calendar-title').innerText = `${currentYear}年 ${currentMonth + 1}月`;
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div></div>`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const cups = (drinkData[dateStr] && drinkData[dateStr].cups) || [];
+                const dayEl = document.createElement('div');
+                dayEl.className = `calendar-day ${dateStr === selectedDate ? 'active' : ''}`;
+                let iconsHtml = `<div class="drink-icon-container">${(DRINK_SVG_OPEN + DRINK_SVG_PATH + DRINK_SVG_CLOSE).repeat(cups.length)}</div>`;
+                dayEl.innerHTML = `<span class="font-bold">${day}</span>${iconsHtml}`;
+                dayEl.onclick = () => { selectedDate = dateStr; openModal(dateStr); renderCalendar(); };
+                grid.appendChild(dayEl);
+            }
+        }
+
+        function changeMonth(dir) {
+            currentMonth += dir;
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            else if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderCalendar();
+        }
+
+        function updateDataSync() {
+            const stats = processStats();
+            document.getElementById('stat-total-cups').innerText = stats.cups;
+            document.getElementById('stat-total-cost').innerText = `$${Math.round(stats.cost)}`;
+            document.getElementById('stat-avg-cost').innerText = stats.cups > 0 ? `$${Math.round(stats.cost/stats.cups)}` : '$0';
+        }
+
+        function renderRankStarChart() {
+            const stats = processStats();
+            const ctx = document.getElementById('rankStarChart').getContext('2d');
+            if (charts.rankStar) charts.rankStar.destroy();
+            
+            // 標籤統一為 ⭐ 格式
+            const labels = ['⭐ 5', '⭐ 4', '⭐ 3', '⭐ 2', '⭐ 1', '⭐ 0'];
+            const data = [0, 0, 0, 0, 0, 0];
+            
+            Object.values(drinkData).forEach(day => {
+                day.cups.forEach(cup => {
+                    const r = cup.rating || 0;
+                    if (r === 5) data[0]++;
+                    else if (r >= 4) data[1]++;
+                    else if (r >= 3) data[2]++;
+                    else if (r >= 2) data[3]++;
+                    else if (r >= 1) data[4]++;
+                    else data[5]++;
+                });
+            });
+
+            charts.rankStar = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#A2D2FF', '#BDE0FE', '#CDB4DB', '#FFC8DD', '#FFAFCC', '#F0F0F0'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false, grid: { display: false } },
+                        y: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } }
+                    }
+                }
+            });
+        }
+
+        function renderStatsCharts() {
+            const stats = processStats();
+            const config = (ctx, labelData, counts, colors) => new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: labelData, datasets: [{ data: counts, backgroundColor: colors, borderWidth: 0 }] },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } }, 
+                    cutout: '65%' 
+                }
+            });
+            const sugarCtx = document.getElementById('sugarChart').getContext('2d');
+            if (charts.sugar) charts.sugar.destroy();
+            charts.sugar = config(sugarCtx, Object.keys(stats.sugars), Object.values(stats.sugars), ['#CDB4DB', '#FFC8DD', '#A2D2FF', '#BDE0FE', '#FFAFCC', '#E0E0E0']);
+
+            const iceCtx = document.getElementById('iceChart').getContext('2d');
+            if (charts.ice) charts.ice.destroy();
+            charts.ice = config(iceCtx, Object.keys(stats.ices), Object.values(stats.ices), ['#A2D2FF', '#BDE0FE', '#8ECAE6', '#CDB4DB', '#FFC8DD', '#99C1DE']);
+        }
+
+        function processStats() {
+            const res = { cups: 0, cost: 0, stores: {}, items: {}, sugars: {}, ices: {} };
+            Object.values(drinkData).forEach(day => {
+                day.cups.forEach(cup => {
+                    res.cups++; res.cost += (cup.price || 0);
+                    if (cup.store) res.stores[cup.store] = (res.stores[cup.store] || 0) + 1;
+                    if (cup.item) res.items[cup.item] = (res.items[cup.item] || 0) + 1;
+                    if (cup.sugar) res.sugars[cup.sugar] = (res.sugars[cup.sugar] || 0) + 1;
+                    if (cup.ice) res.ices[cup.ice] = (res.ices[cup.ice] || 0) + 1;
+                });
+            });
+            return { 
+                ...res, 
+                topStores: Object.entries(res.stores).sort((a,b)=>b[1]-a[1]).slice(0, 5), 
+                topItems: Object.entries(res.items).sort((a,b)=>b[1]-a[1]).slice(0, 5) 
+            };
+        }
+
+        function renderRankings() {
+            const stats = processStats();
+            const createRankUI = (data) => data.length ? data.map((item, idx) => `
+                <div class="flex items-center gap-4 p-4 bg-[#FDFDFD] rounded-2xl border border-gray-50 shadow-sm">
+                    <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-xs font-black text-[#A2D2FF] shadow-inner">${idx+1}</div>
+                    <div class="flex-1 font-bold text-gray-600">${item[0]}</div>
+                    <div class="text-sm text-[#A2D2FF] font-black">${item[1]} 杯</div>
+                </div>`).join('') : `<p class="text-center text-gray-300 py-6 text-xs italic">尚未有數據</p>`;
+            document.getElementById('rank-stores-list').innerHTML = createRankUI(stats.topStores);
+            document.getElementById('rank-items-list').innerHTML = createRankUI(stats.topItems);
+        }
+
+        const SUGAR_OPTS = ['全糖', '少糖', '半糖', '微糖', '一分糖', '無法調整'];
+        const ICE_OPTS = ['正常', '少冰', '微冰', '去冰', '常溫', '溫', '無法調整'];
+
+        function openModal(dateStr) {
+            document.getElementById('modal-date-title').innerText = dateStr.replace(/-/g, ' / ');
+            const container = document.getElementById('cup-form-container');
+            container.innerHTML = "";
+            const savedCups = (drinkData[dateStr] && drinkData[dateStr].cups) || [];
+
+            [0, 1].forEach(i => {
+                const cup = savedCups[i] || {};
+                const rating = cup.rating || 0;
+                container.innerHTML += `
+                    <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-50" id="cup-block-${i}">
+                        <div class="flex justify-between items-center mb-6">
+                            <span class="text-[10px] font-black px-4 py-2 rounded-full text-white" style="background: ${i===0?'#A2D2FF':'#FFC8DD'}">CUP ${i+1}</span>
+                            <button class="px-3 py-2 flex items-center justify-center bg-gray-50 rounded-xl text-gray-300 text-[10px] active:bg-gray-100" onclick="clearCup(${i})">清空此杯</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <input type="text" id="store-${i}" placeholder="店家" value="${cup.store||''}" class="w-full p-4 bg-gray-50 rounded-2xl text-xs border-none outline-none focus:ring-1 focus:ring-[#A2D2FF]">
+                            <input type="text" id="item-${i}" placeholder="飲品" value="${cup.item||''}" class="w-full p-4 bg-gray-50 rounded-2xl text-xs border-none outline-none focus:ring-1 focus:ring-[#A2D2FF]">
+                        </div>
+                        <div class="mb-6">
+                            <p class="text-[9px] text-gray-400 font-bold mb-3 ml-1">甜度</p>
+                            <div class="flex flex-wrap gap-2">
+                                ${SUGAR_OPTS.map(o => `<div class="option-btn ${cup.sugar===o?'sugar-selected':''}" onclick="setOpt(${i},'sugar','${o}',this)">${o}</div>`).join('')}
+                            </div>
+                            <input type="hidden" id="sugar-${i}" value="${cup.sugar||''}">
+                        </div>
+                        <div class="mb-6">
+                            <p class="text-[9px] text-gray-400 font-bold mb-3 ml-1">冰塊</p>
+                            <div class="flex flex-wrap gap-2">
+                                ${ICE_OPTS.map(o => `<div class="option-btn ${cup.ice===o?'ice-selected':''}" onclick="setOpt(${i},'ice','${o}',this)">${o}</div>`).join('')}
+                            </div>
+                            <input type="hidden" id="ice-${i}" value="${cup.ice||''}">
+                        </div>
+                        <div class="relative mb-6">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 text-xs">$</span>
+                            <input type="number" id="price-${i}" placeholder="金額" value="${cup.price||''}" class="w-full pl-8 p-4 bg-gray-50 rounded-2xl text-xs border-none outline-none">
+                        </div>
+                        <div class="pt-4 border-t border-gray-50">
+                            <p class="text-[9px] text-gray-400 font-bold text-center mb-2">評分滿意度</p>
+                            <div class="star-rating" id="rating-container-${i}">${renderStars(i, rating)}</div>
+                            <input type="hidden" id="rating-${i}" value="${rating}">
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function renderStars(cupIdx, rating) {
+            let html = '';
+            for (let s = 1; s <= 5; s++) {
+                let fill = '#F0F0F0'; 
+                if (rating >= s) fill = 'var(--mo-gold)';
+                else if (rating >= s - 0.5) fill = 'url(#grad-half-v20)';
+
+                html += `
+                    <div class="star-item" onclick="handleStarClick(${cupIdx}, ${s}, event)">
+                        <svg viewBox="0 0 24 24" width="32" height="32">
+                            <defs>
+                                <linearGradient id="grad-half-v20">
+                                    <stop offset="50%" stop-color="var(--mo-gold)" />
+                                    <stop offset="50%" stop-color="#F0F0F0" />
+                                </linearGradient>
+                            </defs>
+                            <path fill="${fill}" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                    </div>`;
+            }
+            return html;
+        }
+
+        function handleStarClick(cupIdx, starNum, event) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const newRating = x < rect.width / 2 ? starNum - 0.5 : starNum;
+            document.getElementById(`rating-${cupIdx}`).value = newRating;
+            document.getElementById(`rating-container-${cupIdx}`).innerHTML = renderStars(cupIdx, newRating);
+        }
+
+        function setOpt(idx, type, val, el) {
+            document.getElementById(`${type}-${idx}`).value = val;
+            const selectClass = type === 'sugar' ? 'sugar-selected' : 'ice-selected';
+            const btns = el.parentElement.querySelectorAll('.option-btn');
+            btns.forEach(b => b.classList.remove(selectClass));
+            el.classList.add(selectClass);
+        }
+
+        function clearCup(idx) {
+            document.getElementById(`store-${idx}`).value = "";
+            document.getElementById(`item-${idx}`).value = "";
+            document.getElementById(`price-${idx}`).value = "";
+            document.getElementById(`sugar-${idx}`).value = "";
+            document.getElementById(`ice-${idx}`).value = "";
+            document.getElementById(`rating-${idx}`).value = "0";
+            document.getElementById(`rating-container-${idx}`).innerHTML = renderStars(idx, 0);
+            const btns = document.getElementById(`cup-block-${idx}`).querySelectorAll('.option-btn');
+            btns.forEach(b => { b.classList.remove('sugar-selected'); b.classList.remove('ice-selected'); });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            toast.innerText = msg;
+            toast.className = "show";
+            setTimeout(() => { 
+                toast.className = toast.className.replace("show", ""); 
+            }, 2000);
+        }
+
+        function saveCurrentDay() {
+            const cups = [];
+            for (let i=0; i<2; i++) {
+                const s = document.getElementById(`store-${i}`).value.trim();
+                const it = document.getElementById(`item-${i}`).value.trim();
+                const p = parseFloat(document.getElementById(`price-${i}`).value) || 0;
+                const sug = document.getElementById(`sugar-${i}`).value;
+                const ice = document.getElementById(`ice-${i}`).value;
+                const r = parseFloat(document.getElementById(`rating-${i}`).value) || 0;
+                if (s || it || p > 0) cups.push({ store: s, item: it, price: p, sugar: sug, ice: ice, rating: r });
+            }
+            if (cups.length) drinkData[selectedDate] = { cups };
+            else delete drinkData[selectedDate];
+            
+            localStorage.setItem(DB_KEY, JSON.stringify(drinkData));
+            
+            showToast("儲存成功！ ✨");
+            setTimeout(() => {
+                closeModal(); 
+                updateDataSync(); 
+                renderCalendar();
+            }, 300);
+        }
+
+        function deleteFullDay() {
+            // 刪除數據
+            delete drinkData[selectedDate];
+            localStorage.setItem(DB_KEY, JSON.stringify(drinkData));
+            
+            // 提示訊息不關視窗
+            showToast("已清除紀錄 🗑️");
+            
+            // 手動清空當前 Modal 內的欄位
+            clearCup(0);
+            clearCup(1);
+            
+            // 背景同步更新
+            updateDataSync(); 
+            renderCalendar();
+        }
+
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+        window.onload = init;
+    </script>
+</body>
+</html>
